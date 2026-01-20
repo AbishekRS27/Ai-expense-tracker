@@ -1,0 +1,271 @@
+{
+  "name": "AI-Powered Expense Tracking and Management",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hello! I'm your AI expense tracker. You can tell me about your expenses and I'll help you track them. For example: \"I spent $45.50 on groceries at Whole Foods\" or \"Paid $120 for electricity bill\"",
+        "options": {
+          "inputPlaceholder": "Tell me about an expense..."
+        }
+      },
+      "id": "7a84c873-4994-4e0e-8a41-079798a6ae2f",
+      "name": "Chat Interface",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ad8c5f45-f69f-4933-aab7-09537137befa"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI expense tracking assistant. Your job is to extract expense information from user messages and help them track their spending.\n\nWhen a user tells you about an expense, extract:\n- amount: The monetary amount (number only, no currency symbols)\n- category: The expense category (groceries, utilities, transportation, dining, entertainment, healthcare, shopping, bills, other)\n- description: A brief description of the expense\n- merchant: The merchant or vendor name (if mentioned)\n- date: The date of the expense (use today if not specified, format: YYYY-MM-DD)\n\nBe conversational and helpful. Confirm the expense details with the user before finalizing. If information is missing, ask clarifying questions.\n\nAfter extracting expense information, respond in a friendly way confirming what was recorded."
+        }
+      },
+      "id": "2c981a7c-ecd7-4a47-ac59-efc64ec7118c",
+      "name": "Expense Processing Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "670e8143-7748-4d95-9960-622d9bc64bea",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        224
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "WZf7kaxHD2gJ2Xyx",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"amount\": {\n      \"type\": \"number\",\n      \"description\": \"The expense amount in dollars\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"Expense category: groceries, utilities, transportation, dining, entertainment, healthcare, shopping, bills, or other\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"Brief description of the expense\"\n    },\n    \"merchant\": {\n      \"type\": \"string\",\n      \"description\": \"Merchant or vendor name\"\n    },\n    \"date\": {\n      \"type\": \"string\",\n      \"description\": \"Date of expense in YYYY-MM-DD format\"\n    }\n  }\n}"
+      },
+      "id": "9aeab64f-1c9d-43ed-a073-1c026c6be7a0",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b139d049-687f-48c0-b7ff-4c7cbc89c169",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6d96d8c7-1695-48b2-8c68-abb7ffa61224",
+      "name": "Calculator Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        480,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "amount",
+              "value": "={{ $json.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "id-2",
+              "name": "category",
+              "value": "={{ $json.category }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "merchant",
+              "value": "={{ $json.merchant || 'Not specified' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "date",
+              "value": "={{ $json.date || $now.format('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0bbada8b-81a3-487d-b74e-fe7400f3f00c",
+      "name": "Format Expense Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Expenses"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "69c66f55-868d-48c3-b7b9-ed67fa1eb55a",
+      "name": "Store in Expense Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Interface": {
+      "main": [
+        [
+          {
+            "node": "Expense Processing Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Expense Processing Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Expense Processing Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Expense Processing Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Expense Processing Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expense Processing Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Expense Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Expense Data": {
+      "main": [
+        [
+          {
+            "node": "Store in Expense Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "6c2f0c5c-cc3d-48ca-9bf8-f4dba37d5488",
+  "meta": {
+    "instanceId": "de5223ba1b1bbdc6857fb6cc86d425e3f396419c9c82e09c7452705b3df9b77e"
+  },
+  "id": "zwPjIsTnFO5GVh66ZpkVo",
+  "tags": []
+}
